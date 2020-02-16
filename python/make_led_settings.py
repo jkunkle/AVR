@@ -45,7 +45,48 @@ class LEDButton(tk.Canvas):
                 self.width, self.height), outline=color, fill=color)
 
             self.configure()
+
+    def get_color(self) : 
+        return self.colors[self.state]
+    def get_state( self) : 
+        return self.state
             
+
+class CaptureButton( tk.Button ) : 
+
+    def __init__(self, master ) : 
+        super().__init__(master, text='Capture', fg='black')
+
+        self.bind("<ButtonPress-1>", self._on_press)
+
+    def set_buttons( self, buttons ) : 
+        self.buttons = buttons
+
+    def set_duration( self, button ) : 
+        self.duration = button
+
+    def _on_press( self, event ) : 
+
+        entries = []
+        for iy in range(0, grid_size ) : 
+            activation = 0x0;
+            is_green   = 0x0;
+            for ix in range(0, grid_size ) : 
+                stat = self.buttons[(ix, iy)].get_state()
+                if stat > 0 : 
+                    activation |= (1 << (grid_size-1-ix))
+                if stat == 1 :  
+                    is_green |= (1 << (grid_size-1-ix) )
+
+            entries.append(activation)
+            entries.append(is_green)
+
+        out_str = 'display_pattern('
+        out_str += (', '.join( ['0x'+format( x, '0x') for x in entries] ))
+        out_str += ', %s );' %self.duration.get()
+
+        print (out_str)
+                                
 
 class ColorButton( tk.Button ) : 
 
@@ -108,6 +149,21 @@ class Application(tk.Frame):
         self.white_button.set_buttons( self.buttons )
         self.red_button.set_buttons( self.buttons )
         self.green_button.set_buttons( self.buttons )
+
+        self.time_lab = tk.Label( self.master, text='Duration')
+        self.time_ent = tk.Entry(self.master, width=8 )
+        self.time_ent.insert( 0, '100' )
+
+        self.time_lab.grid( row = 10, column=0, columnspan=2 )
+        self.time_ent.grid( row = 10, column=2, columnspan=2 )
+
+        self.cap_but = CaptureButton( self.master )
+        self.cap_but.grid( row=10, column=4, columnspan=2 )
+
+        self.cap_but.set_buttons( self.buttons )
+        self.cap_but.set_duration( self.time_ent )
+
+
         #self.test_button.pack()
         #self.test_button2.pack()
         #self.test_can = tk.Canvas(self.master, width=200, height=100 )

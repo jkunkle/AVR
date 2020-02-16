@@ -1,6 +1,8 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
+//LOW_FUSE=0x62;
+
 void delay_ms(int ms)
 {
     while (ms--) {
