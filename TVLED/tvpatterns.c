@@ -21,15 +21,15 @@
 #include "light_ws2812.h"
 
 #define _MAX_LED 82
-#define _MAX_DELAY 2048
+#define _MAX_DELAY 1024
 #define _MIN_DELAY 32
 #define _N_STEPS 82
 #define _N_PAT 2
 
-volatile int on_led = 1;
 struct cRGB led[_MAX_LED];
 
-volatile int DELAY = _MAX_DELAY;
+//volatile int DELAY = _MAX_DELAY;
+volatile int DELAY = 64;
 //int pattern[_N_PAT][_N_STEPS][_MAX_LED]; 
 int pattern[_N_STEPS][_MAX_LED]; 
 
@@ -37,16 +37,14 @@ int pattern[_N_STEPS][_MAX_LED];
 
 int BUTTON_VETO = 0;
 
-int violet[4] = {8, 0, 1, 1};
-int cyan[4] = {0, 3, 4, 1};
-int yellow[4] = {8, 3, 0, 1};
-int beige[4] = {8, 3, 1, 1};
+//int violet[4] = {8, 0, 1, 1};
+//int cyan[4] = {0, 3, 4, 1};
+//int yellow[4] = {8, 3, 0, 1};
+//int beige[4] = {8, 3, 1, 1};
 
-volatile int ipat = 0;
-
+//volatile int ipat = 0;
 
 uint8_t TCCR1B_SEL = (1 << CS11 ) | (1 << CS10 );
-  
 
 
 ISR( TIMER1_OVF_vect ) {
@@ -349,14 +347,19 @@ int main(void)
   EIMSK |= (1<<INT0) | ( 1 << INT1 );  // enable external interrupt 0
   EICRA |= (1<<ISC01) | (1 << ISC11 ); // interrupt on falling edge
   sei();
+
   _delay_us(100);
   // ************************
   // Finding TV purple
-  led[0].r=255;
-  led[0].g=255;
-  led[0].b=255;
-  ws2812_setleds(led,1);
-  _delay_ms(DELAY);                         // wait for 500ms.
+  //led[0].r=255;
+  //led[0].g=255;
+  //led[0].b=255;
+
+  //ws2812_setleds(led,1);
+
+  //_delay_ms(DELAY);                         // wait for 500ms.
+
+  while(1) {
 
   //while(1)
   //{
@@ -442,20 +445,21 @@ int main(void)
 
 
 
-  //    //// ************************
-  //    //// Color loop test
-  //    //for( int ir = 0; ir < 32; ir+=2 ) { 
-  //    //    for( int ig = 0; ig < 32; ig+=2 ) { 
-  //    //        for( int ib = 0; ib < 32; ib+=2 ) { 
+  // ************************
+  // Color loop test
+  for( int ir = 0; ir < 32; ir+=2 ) { 
+      for( int ig = 0; ig < 32; ig+=2 ) { 
+          for( int ib = 0; ib < 32; ib+=2 ) { 
 
-  //    //            for( int il = 0 ; il < on_led ; il++ ) {
-  //    //                led[il].r=ir;led[il].g=ig;led[il].b=ib;    // Write red to array
-  //    //            }
-  //    //            ws2812_setleds(led,_MAX_LED);
-  //    //             _delay_ms(DELAY);                         // wait for 500ms.
-  //    //        }
-  //    //    }
-  //    //}
+              for( int il = 0 ; il < _MAX_LED; il++ ) {
+                  led[il].r=ir;led[il].g=ig;led[il].b=ib;    // Write red to array
+              }
+              ws2812_setleds(led,_MAX_LED);
+               _delay_ms(DELAY);                         // wait for 500ms.
+          }
+      }
+  }
+}
 
 
   //}
