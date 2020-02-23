@@ -29,9 +29,9 @@
 struct cRGB led[_MAX_LED];
 
 //volatile int DELAY = _MAX_DELAY;
-volatile int DELAY = 64;
+int DELAY = 64;
 //int pattern[_N_PAT][_N_STEPS][_MAX_LED]; 
-int pattern[_N_STEPS][_MAX_LED]; 
+//int pattern[_N_STEPS][_MAX_LED]; 
 
 //int pattern_steps[_N_PAT] = {3, 82};
 
@@ -43,6 +43,7 @@ int BUTTON_VETO = 0;
 //int beige[4] = {8, 3, 1, 1};
 
 //volatile int ipat = 0;
+volatile int on_led = 1;
 
 uint8_t TCCR1B_SEL = (1 << CS11 ) | (1 << CS10 );
 
@@ -164,7 +165,7 @@ int main(void)
       for( int ig = 0; ig < 32; ig+=2 ) { 
           for( int ib = 0; ib < 32; ib+=2 ) { 
 
-              for( int il = 0 ; il < _MAX_LED; il++ ) {
+              for( int il = 0 ; il < on_led; il++ ) {
                   led[il].r=ir;led[il].g=ig;led[il].b=ib;    // Write red to array
               }
               ws2812_setleds(led,_MAX_LED);
