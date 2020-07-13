@@ -349,9 +349,9 @@ int main(void)
               led[437].g=cyan[1]*4;
               led[437].b=cyan[2]*4;
 
-              led[400].r=cyan[0]*4;
-              led[400].g=cyan[1]*4;
-              led[400].b=cyan[2]*4;
+              led[421].r=cyan[0]*4;
+              led[421].g=cyan[1]*4;
+              led[421].b=cyan[2]*4;
 
               for( int il = 34 ; il < 53; il++ ) {
                   led[il].r=violet[0]*4;
@@ -378,7 +378,7 @@ int main(void)
                   led[il].g=yellow[1]*4;
                   led[il].b=yellow[2]*4;
               }
-              for( int il = 396 ; il < 418; il++ ) {
+              for( int il = 397 ; il < 417; il++ ) {
                   led[il].r=cyan[0]*4;
                   led[il].g=cyan[1]*4;
                   led[il].b=cyan[2]*4;
