@@ -2,11 +2,13 @@
 #include <util/delay.h>
 
 int _bit_reset = 3;
-int _bit_reddata = 2;
-int _bit_reddata_2 = 0;
+int _bit_reddata = 0;
+int _bit_reddata_2 = 2;
+int _bit_reddata_3 = 4;
 int _bit_copy = 4;
-int _bit_coldata = 6;
-int _bit_coldata_2 = 1;
+int _bit_coldata = 1;
+int _bit_coldata_2 = 3;
+int _bit_coldata_3 = 5;
 int _bit_enable = 7;
 
 int _data_depth = 8;
@@ -38,26 +40,26 @@ void display_column( int icol, int col_data, int icol2, int col_data2 ) {
   //for( int dd =_data_depth-1; dd > 0; dd-- ) {
 
       if( col_mapping[dd] == icol ) {
-          PORTB = PORTB | (0x1 << _bit_coldata );
+          PORTD = PORTD | (0x1 << _bit_coldata );
       }
       if( col_mapping[dd] == icol2 ) {
-          PORTB = PORTB | (0x1 << _bit_coldata_2 );
+          PORTD = PORTD | (0x1 << _bit_coldata_2 );
       }
       if( col_data & (0x1 << dd) ) {
-          PORTB = PORTB | (0x1 << _bit_reddata ) ;
+          PORTD = PORTD | (0x1 << _bit_reddata ) ;
       }
       if( col_data2 & (0x1 << dd) ) {
-          PORTB = PORTB | (0x1 << _bit_reddata_2 ) ;
+          PORTD = PORTD | (0x1 << _bit_reddata_2 ) ;
       }
 
       PORTB = PORTB | (0x1 << _bit_copy );
 
       // set data and copy signals to 0
       PORTB = PORTB & ~(0x1 << _bit_copy );
-      PORTB = PORTB & ~(0x1 << _bit_coldata );
-      PORTB = PORTB & ~(0x1 << _bit_reddata );
-      PORTB = PORTB & ~(0x1 << _bit_coldata_2 );
-      PORTB = PORTB & ~(0x1 << _bit_reddata_2 );
+      PORTD = PORTD & ~(0x1 << _bit_coldata );
+      PORTD = PORTD & ~(0x1 << _bit_reddata );
+      PORTD = PORTD & ~(0x1 << _bit_coldata_2 );
+      PORTD = PORTD & ~(0x1 << _bit_reddata_2 );
   }
 
   // enable output
@@ -239,6 +241,17 @@ void display_number( int number, int time ) {
 //}
 
     
+uint8_t ReadADC(uint8_t ADCchannel)
+{
+ //select ADC channel with safety mask
+ ADMUX = (ADMUX & 0xF0) | (ADCchannel & 0x0F);
+ //single conversion mode
+ ADCSRA |= (1<<ADSC);
+ // wait until ADC conversion is complete
+ while( ADCSRA & (1<<ADSC) );
+ return ADC;
+}
+
 int main(void)
 {
   DDRB = 0xff;
@@ -253,6 +266,9 @@ int main(void)
   //delay_ms(1000);
   _delay_us(1);
   PORTB = 0x01 << _bit_reset;
+
+  ADMUX |= ( 1 << REFS1 ) | ( 1 << REFS0 ); //use internal refernce (with cap on AREF)
+  ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN); // set prescale to 128 and enable ADC
 
   while (1) {
 
