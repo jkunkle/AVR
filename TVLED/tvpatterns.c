@@ -349,9 +349,9 @@ int main(void)
               led[437].g=cyan[1]*4;
               led[437].b=cyan[2]*4;
 
-              led[421].r=cyan[0]*4;
-              led[421].g=cyan[1]*4;
-              led[421].b=cyan[2]*4;
+              led[419].r=cyan[0]*4;
+              led[419].g=cyan[1]*4;
+              led[419].b=cyan[2]*4;
 
               for( int il = 34 ; il < 53; il++ ) {
                   led[il].r=violet[0]*4;
