@@ -419,42 +419,42 @@ int main(void)
               //led[420].g=cyan[1]*4;
               //led[420].b=cyan[2]*4;
 
-              for( int il = 13 ; il < 35; il++ ) {
+              for( int il = 13 ; il < 34; il++ ) {
                   led[il].r=violet[0]*4;
                   led[il].g=violet[1]*4;
                   led[il].b=violet[2]*4;
               }
-              for( int il = 110 ; il < 125; il++ ) {
+              for( int il = 106 ; il < 121; il++ ) {
                   led[il].r=violet[0]*4;
                   led[il].g=violet[1]*4;
                   led[il].b=violet[2]*4;
               }
-              for( int il = 149 ; il < 174; il++ ) {
+              for( int il = 145 ; il < 170; il++ ) {
                   led[il].r=violet[0]*4;
                   led[il].g=violet[1]*4;
                   led[il].b=violet[2]*4;
               }
-              for( int il = 174 ; il < 213; il++ ) {
+              for( int il = 170 ; il < 209; il++ ) {
                   led[il].r=beige[0]*4;
                   led[il].g=beige[1]*4;
                   led[il].b=beige[2]*4;
               }
-              for( int il = 257 ; il < 311; il++ ) {
+              for( int il = 253 ; il < 307; il++ ) {
                   led[il].r=yellow[0]*4;
                   led[il].g=yellow[1]*4;
                   led[il].b=yellow[2]*4;
               }
-              for( int il = 371 ; il < 396; il++ ) {
+              for( int il = 369 ; il < 394; il++ ) {
                   led[il].r=cyan[0]*4;
                   led[il].g=cyan[1]*4;
                   led[il].b=cyan[2]*4;
               }
-              for( int il = 443 ; il < 465; il++ ) {
+              for( int il = 441 ; il < 462; il++ ) {
                   led[il].r=cyan[0]*4;
                   led[il].g=cyan[1]*4;
                   led[il].b=cyan[2]*4;
               }
-              for( int il = 503 ; il < 518; il++ ) {
+              for( int il = 499 ; il < 513; il++ ) {
                   led[il].r=cyan[0]*4;
                   led[il].g=cyan[1]*4;
                   led[il].b=cyan[2]*4;
