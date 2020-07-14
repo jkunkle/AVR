@@ -388,36 +388,57 @@ int main(void)
                   led[il].g=cyan[1]*4;
                   led[il].b=cyan[2]*4;
               }
-              for( int il = 514 ; il < 527; il++ ) {
+              for( int il = 514 ; il < 526; il++ ) {
                   led[il].r=cyan[0]*4;
                   led[il].g=cyan[1]*4;
                   led[il].b=cyan[2]*4;
               }
           }
           else if( istep == 2) {
-              //led[12].r=violet[0]*4;
-              //led[12].g=violet[1]*4;
-              //led[12].b=violet[2]*4;
+              led[12].r=violet[0]*4;
+              led[12].g=violet[1]*4;
+              led[12].b=violet[2]*4;
 
-              //led[109].r=violet[0]*4;
-              //led[109].g=violet[1]*4;
-              //led[109].b=violet[2]*4;
+              led[74].r=violet[0]*4;
+              led[74].g=violet[1]*4;
+              led[74].b=violet[2]*4;
 
-              //led[95].r=violet[0]*4;
-              //led[95].g=violet[1]*4;
-              //led[95].b=violet[2]*4;
+              led[91].r=violet[0]*4;
+              led[91].g=violet[1]*4;
+              led[91].b=violet[2]*4;
 
-              //led[125].r=violet[0]*4;
-              //led[125].g=violet[1]*4;
-              //led[125].b=violet[2]*4;
+              led[106].r=violet[0]*4;
+              led[106].g=violet[1]*4;
+              led[106].b=violet[2]*4;
 
-              //led[419].r=cyan[0]*4;
-              //led[419].g=cyan[1]*4;
-              //led[419].b=cyan[2]*4;
+              led[143].r=violet[0]*4;
+              led[143].g=violet[1]*4;
+              led[143].b=violet[2]*4;
 
-              //led[420].r=cyan[0]*4;
-              //led[420].g=cyan[1]*4;
-              //led[420].b=cyan[2]*4;
+
+              led[418].r=cyan[0]*4;
+              led[418].g=cyan[1]*4;
+              led[418].b=cyan[2]*4;
+
+              led[417].r=cyan[0]*4;
+              led[417].g=cyan[1]*4;
+              led[417].b=cyan[2]*4;
+              
+              led[440].r=cyan[0]*4;
+              led[440].g=cyan[1]*4;
+              led[440].b=cyan[2]*4;
+
+              led[394].r=cyan[0]*4;
+              led[394].g=cyan[1]*4;
+              led[394].b=cyan[2]*4;
+
+              led[512].r=cyan[0]*4;
+              led[512].g=cyan[1]*4;
+              led[512].b=cyan[2]*4;
+
+              led[527].r=cyan[0]*4;
+              led[527].g=cyan[1]*4;
+              led[527].b=cyan[2]*4;
 
               for( int il = 13 ; il < 34; il++ ) {
                   led[il].r=violet[0]*4;
@@ -454,7 +475,7 @@ int main(void)
                   led[il].g=cyan[1]*4;
                   led[il].b=cyan[2]*4;
               }
-              for( int il = 499 ; il < 513; il++ ) {
+              for( int il = 498 ; il < 513; il++ ) {
                   led[il].r=cyan[0]*4;
                   led[il].g=cyan[1]*4;
                   led[il].b=cyan[2]*4;
