@@ -388,7 +388,7 @@ int main(void)
                   led[il].g=cyan[1]*4;
                   led[il].b=cyan[2]*4;
               }
-              for( int il = 514 ; il < 526; il++ ) {
+              for( int il = 513 ; il < 527; il++ ) {
                   led[il].r=cyan[0]*4;
                   led[il].g=cyan[1]*4;
                   led[il].b=cyan[2]*4;
