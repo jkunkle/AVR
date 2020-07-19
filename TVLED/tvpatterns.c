@@ -57,54 +57,57 @@ const int yellow[4] = {8, 3, 0, 1};
 const int beige[4] = {8, 3, 1, 1};
 
 const int max_delays[_N_PAT] = {16,2048, 256, 256, 1024, 256, 1024};
-const int min_delays[_N_PAT] = {16,8, 1, 1, 1, 1, 1024};
+const int min_delays[_N_PAT] = {16,8, 1, 1, 1, 4, 1024};
 
 volatile int DELAY = max_delays[0];
 
-int patterns_race[_N_RACE_PAT][3] = { //{2, 39, 66}, 
-                                      //{3, 40, 67}, 
-                                      //{4, 41, 68}, 
-                                      //{5, 42, 69}, 
-                                      //{6, 43, 70}, 
-                                      //{7, 44, 71}, 
-                                      //{8, 45, 72}, 
-                                      //{9, 46, 72}, 
-                                      //{10, 47, 72}, 
-                                      //{11, 48, 72}, 
-                                      //{12, 49, 72},
-                                      //{13, 49, 72},
-                                      //{14, 49, 72},
-                                      //{15, 50, 73},
-                                      //{16, 50, 73},
-                                      //{17, 50, 73},
-                                      //{18, 51, 73},
-                                      //{19, 52, 73},
-                                      //{20, 53, 73},
-                                      //{21, 54, 73},
-                                      //{22, 55, 73},
-                                      //{23, 56, 74},
-                                      //{24, 57, 75},
-                                      //{25, 58, 76},
-                                      //{26, 59, 77},
-                                      //{27, 60, 78},
-                                      //{28, 61, 79},
-                                      //{29, 62, 80},
-                                      //{30, 62, 80},
-                                      //{31, 62, 80},
-                                      //{32, 62, 80},
-                                      //{33, 62, 80},
-                                      //{34, 63, 80},
-                                      //{35, 64, 81},
-                                      //{36, 65, 81},
-                                      //{37, 66, 81},
-                                      {38, 67, 81},
+int patterns_race[_N_RACE_PAT][3] = { 
+    
                                       {0, 39, 81},
                                       {1, 39, 81},
                                       {2, 39, 81}
+                                      {2, 39, 66}, 
+                                      {3, 40, 67}, 
+                                      {4, 41, 68}, 
+                                      {5, 42, 69}, 
+                                      {6, 43, 70}, 
+                                      {7, 44, 71}, 
+                                      {8, 45, 72}, 
+                                      {9, 46, 72}, 
+                                      {10, 47, 72}, 
+                                      {11, 48, 72}, 
+                                      {12, 49, 72},
+                                      {13, 49, 72},
+                                      {14, 49, 72},
+                                      {15, 50, 73},
+                                      {16, 50, 73},
+                                      {17, 50, 73},
+                                      {18, 51, 73},
+                                      {19, 52, 73},
+                                      {20, 53, 73},
+                                      {21, 54, 73},
+                                      {22, 55, 73},
+                                      {23, 56, 74},
+                                      {24, 57, 75},
+                                      {25, 58, 76},
+                                      {26, 59, 77},
+                                      {27, 60, 78},
+                                      {28, 61, 79},
+                                      {29, 62, 80},
+                                      {30, 62, 80},
+                                      {31, 62, 80},
+                                      {32, 62, 80},
+                                      {33, 62, 80},
+                                      {34, 63, 80},
+                                      {35, 64, 81},
+                                      {36, 65, 81},
+                                      {37, 66, 81},
+                                      {38, 67, 81},
                             };
 
 volatile int ipat = 0;
 volatile int istep = 0;
+volatile int isub = 0;
 volatile int stop_updates = 0;
 volatile int idirection = 1;
 
@@ -353,6 +356,10 @@ int main(void)
               led[419].g=cyan[1]*4;
               led[419].b=cyan[2]*4;
 
+              led[528].r=cyan[0]*4;
+              led[528].g=cyan[1]*4;
+              led[528].b=cyan[2]*4;
+
               for( int il = 34 ; il < 53; il++ ) {
                   led[il].r=violet[0]*4;
                   led[il].g=violet[1]*4;
@@ -399,22 +406,17 @@ int main(void)
               led[12].g=violet[1]*4;
               led[12].b=violet[2]*4;
 
-              led[74].r=violet[0]*4;
-              led[74].g=violet[1]*4;
-              led[74].b=violet[2]*4;
+              led[70].r=violet[0]*4;
+              led[70].g=violet[1]*4;
+              led[70].b=violet[2]*4;
 
               led[91].r=violet[0]*4;
               led[91].g=violet[1]*4;
               led[91].b=violet[2]*4;
 
-              led[106].r=violet[0]*4;
-              led[106].g=violet[1]*4;
-              led[106].b=violet[2]*4;
-
-              led[143].r=violet[0]*4;
-              led[143].g=violet[1]*4;
-              led[143].b=violet[2]*4;
-
+              led[110].r=violet[0]*4;
+              led[110].g=violet[1]*4;
+              led[110].b=violet[2]*4;
 
               led[418].r=cyan[0]*4;
               led[418].g=cyan[1]*4;
@@ -440,17 +442,21 @@ int main(void)
               led[527].g=cyan[1]*4;
               led[527].b=cyan[2]*4;
 
+              led[526].r=cyan[0]*4;
+              led[526].g=cyan[1]*4;
+              led[526].b=cyan[2]*4;
+
               for( int il = 13 ; il < 34; il++ ) {
                   led[il].r=violet[0]*4;
                   led[il].g=violet[1]*4;
                   led[il].b=violet[2]*4;
               }
-              for( int il = 106 ; il < 121; il++ ) {
+              for( int il = 105 ; il < 122; il++ ) {
                   led[il].r=violet[0]*4;
                   led[il].g=violet[1]*4;
                   led[il].b=violet[2]*4;
               }
-              for( int il = 145 ; il < 170; il++ ) {
+              for( int il = 144 ; il < 170; il++ ) {
                   led[il].r=violet[0]*4;
                   led[il].g=violet[1]*4;
                   led[il].b=violet[2]*4;
@@ -517,8 +523,9 @@ int main(void)
           ws2812_setleds(led,_MAX_LED);
           _delay_ms(DELAY);                         // wait for 500ms.
       }
+      //breathe
       else if( ipat == 3 ) { 
-          if( istep >= 15 ) { 
+          if( istep >= 20 ) { 
               istep = 0;
               if( idirection == 0 ) {
                   idirection = 1 ;
@@ -527,48 +534,63 @@ int main(void)
                   idirection = 0 ;
               }
           }
+
           if( idirection == 0 ) {
+              if( istep <= 10 ) {
+                  isub = istep;
+              }
+              else {
+                  isub = ( istep - 10 )/2 + 10;
+              }
+              
+
               for( int il = _START_VIOLET ; il < _START_BEIGE; il++ ) {
-                  led[il].r=violet[0]*(14-istep);
-                  led[il].g=violet[1]*(14-istep);
-                  led[il].b=violet[2]*(14-istep);
+                  led[il].r=violet[0]*(14-isub);
+                  led[il].g=violet[1]*(14-isub);
+                  led[il].b=violet[2]*(14-isub);
               }
               for( int il = _START_BEIGE; il < _START_YELLOW; il++ ) {
-                  led[il].r=beige[0]*(14-istep);
-                  led[il].g=beige[1]*(14-istep);
-                  led[il].b=beige[2]*(14-istep);
+                  led[il].r=beige[0]*(14-isub);
+                  led[il].g=beige[1]*(14-isub);
+                  led[il].b=beige[2]*(14-isub);
               }
               for( int il = _START_YELLOW; il < _START_CYAN; il++ ) {
-                  led[il].r=yellow[0]*(14-istep);
-                  led[il].g=yellow[1]*(14-istep);
-                  led[il].b=yellow[2]*(14-istep);
+                  led[il].r=yellow[0]*(14-isub);
+                  led[il].g=yellow[1]*(14-isub);
+                  led[il].b=yellow[2]*(14-isub);
               }
               for( int il = _START_CYAN; il < _MAX_LED; il++ ) {
-                  led[il].r=cyan[0]*(14-istep);
-                  led[il].g=cyan[1]*(14-istep);
-                  led[il].b=cyan[2]*(14-istep);
+                  led[il].r=cyan[0]*(14-isub);
+                  led[il].g=cyan[1]*(14-isub);
+                  led[il].b=cyan[2]*(14-isub);
               }
           } 
           else {
+              if( istep >= 5 ) {
+                  isub = istep;
+              }
+              else {
+                  isub = ( istep )/2;
+              }
               for( int il = _START_VIOLET ; il < _START_BEIGE; il++ ) {
-                  led[il].r=violet[0]*(istep+1);
-                  led[il].g=violet[1]*(istep+1);
-                  led[il].b=violet[2]*(istep+1);
+                  led[il].r=violet[0]*(isub+1);
+                  led[il].g=violet[1]*(isub+1);
+                  led[il].b=violet[2]*(isub+1);
               }
               for( int il = _START_BEIGE; il < _START_YELLOW; il++ ) {
-                  led[il].r=beige[0]*(istep+1);
-                  led[il].g=beige[1]*(istep+1);
-                  led[il].b=beige[2]*(istep+1);
+                  led[il].r=beige[0]*(isub+1);
+                  led[il].g=beige[1]*(isub+1);
+                  led[il].b=beige[2]*(isub+1);
               }
               for( int il = _START_YELLOW; il < _START_CYAN; il++ ) {
-                  led[il].r=yellow[0]*(istep+1);
-                  led[il].g=yellow[1]*(istep+1);
-                  led[il].b=yellow[2]*(istep+1);
+                  led[il].r=yellow[0]*(isub+1);
+                  led[il].g=yellow[1]*(isub+1);
+                  led[il].b=yellow[2]*(isub+1);
               }
               for( int il = _START_CYAN; il < _MAX_LED; il++ ) {
-                  led[il].r=cyan[0]*(istep+1);
-                  led[il].g=cyan[1]*(istep+1);
-                  led[il].b=cyan[2]*(istep+1);
+                  led[il].r=cyan[0]*(isub+1);
+                  led[il].g=cyan[1]*(isub+1);
+                  led[il].b=cyan[2]*(isub+1);
               }
           }
           ws2812_setleds(led,_MAX_LED);
