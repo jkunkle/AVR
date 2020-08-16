@@ -123,6 +123,27 @@ const uint16_t patterns_race[_N_RACE_PAT][12] PROGMEM = {
                 {88, 124, 166, 178, 216, 243, 276, 328, 368, 530, 533, 492}
                             };
 
+const uint8_t color_patterns[12][4] PROGMEM = {
+                {0, 1, 2, 3},
+                {1, 2, 3, 0},
+                {2, 3, 0, 1},
+                {3, 0, 1, 2},
+                {0, 2, 1, 3},
+                {1, 0, 3, 2},
+                {2, 0, 1, 3},
+                {3, 1, 0, 2},
+                {0, 3, 1, 2},
+                {1, 0, 2, 3},
+                {2, 3, 0, 1},
+                {3, 2, 1, 0},
+};
+const uint16_t color_ranges[4][2] PROGMEM = {
+    {_START_VIOLET, _START_BEIGE},
+    {_START_BEIGE, _START_YELLOW},
+    {_START_YELLOW, _START_CYAN},
+    {_START_CYAN, _MAX_LED},
+};
+
 volatile int ipat = 0;
 volatile uint16_t istep = 0;
 volatile int isub = 0;
@@ -169,7 +190,11 @@ ISR(INT0_vect)
 ISR(INT1_vect)
 {
     if (BUTTON_VETO == 0 ) { 
+        int prev_step = istep/DELAY;
         DELAY /= 2;
+        if( istep/DELAY > (prev_step + 1) ) {
+            istep = ( prev_step + 1)*DELAY;
+        }
         if( DELAY <= min_delays[ipat]) DELAY=max_delays[ipat];
         
         BUTTON_VETO = 1;
@@ -558,37 +583,47 @@ int main(void)
 
       }
       else if( ipat == 2 ) { 
-          if( istep >= _MAX_LED ) { 
+          uint16_t patStep = istep/DELAY;
+          if( patStep >= 12 ) { 
               istep = 0;
           }
 
-          for( int il = 0 ; il < _MAX_LED; il++ ) {
-              led[il].r=0;
-              led[il].g=0;
-              led[il].b=0;
+          uint8_t pat0  = pgm_read_byte(&(color_patterns[patStep][0]));
+          uint8_t pat1  = pgm_read_byte(&(color_patterns[patStep][1]));
+          uint8_t pat2  = pgm_read_byte(&(color_patterns[patStep][2]));
+          uint8_t pat3  = pgm_read_byte(&(color_patterns[patStep][3]));
+
+          uint16_t startv = pgm_read_word(&(color_ranges[pat0][0]));
+          uint16_t endv = pgm_read_word(&(color_ranges[pat0][1]));
+          uint16_t startb = pgm_read_word(&(color_ranges[pat1][0]));
+          uint16_t endb = pgm_read_word(&(color_ranges[pat1][1]));
+          uint16_t starty = pgm_read_word(&(color_ranges[pat2][0]));
+          uint16_t endy = pgm_read_word(&(color_ranges[pat2][1]));
+          uint16_t startc = pgm_read_word(&(color_ranges[pat3][0]));
+          uint16_t endc = pgm_read_word(&(color_ranges[pat3][1]));
+
+          for( int il = startv; il < endv; il++ ) {
+              led[il].r=violet[0]*brightness;
+              led[il].g=violet[1]*brightness;
+              led[il].b=violet[2]*brightness;
           }
-          if( istep < _START_BEIGE  ) { 
-             led[istep].r=violet[0]*brightness;
-             led[istep].g=violet[1]*brightness;
-             led[istep].b=violet[2]*brightness;
+          for( int il = startb; il < endb; il++ ) {
+              led[il].r=beige[0]*brightness;
+              led[il].g=beige[1]*brightness;
+              led[il].b=beige[2]*brightness;
           }
-          if( istep >= _START_BEIGE && istep < _START_YELLOW  ) { 
-             led[istep].r=beige[0]*brightness;
-             led[istep].g=beige[1]*brightness;
-             led[istep].b=beige[2]*brightness;
+          for( int il = starty; il < endy; il++ ) {
+              led[il].r=yellow[0]*brightness;
+              led[il].g=yellow[1]*brightness;
+              led[il].b=yellow[2]*brightness;
           }
-          if( istep >= _START_YELLOW && istep < _START_CYAN  ) { 
-             led[istep].r=yellow[0]*brightness;
-             led[istep].g=yellow[1]*brightness;
-             led[istep].b=yellow[2]*brightness;
-          }
-          if( istep >= _START_CYAN && istep < _MAX_LED ) { 
-             led[istep].r=cyan[0]*brightness;
-             led[istep].g=cyan[1]*brightness;
-             led[istep].b=cyan[2]*brightness;
+          for( int il = startc; il < endc; il++ ) {
+              led[il].r=cyan[0]*brightness;
+              led[il].g=cyan[1]*brightness;
+              led[il].b=cyan[2]*brightness;
           }
           ws2812_setleds(led,_MAX_LED);
-          _delay_ms(DELAY);                         // wait for 500ms.
+
       }
       //breathe
       else if( ipat == 3 ) { 
@@ -756,11 +791,13 @@ int main(void)
               led[il].b=0;
           }
 
-          uint8_t new_seed = fill_random( led, 16, (uint8_t)istep );
-          new_seed = fill_random( led, 16, new_seed );
-          new_seed = fill_random( led, 16, new_seed );
-          new_seed = fill_random( led, 16, new_seed );
-          new_seed = fill_random( led, 16, new_seed );
+          uint8_t new_seed = fill_random( led, brightness, (uint8_t)istep );
+          new_seed = fill_random( led, brightness, new_seed );
+          new_seed = fill_random( led, brightness, new_seed );
+          new_seed = fill_random( led, brightness, new_seed );
+          new_seed = fill_random( led, brightness, new_seed );
+          new_seed = fill_random( led, brightness, new_seed );
+          new_seed = fill_random( led, brightness, new_seed );
           fill_random( led, 16, new_seed );
 
           ws2812_setleds(led,_MAX_LED);
