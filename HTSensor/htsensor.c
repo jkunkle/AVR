@@ -171,7 +171,10 @@ int main( void )
     i2c_init();
 
     // For bluetooth module
-    USART_Init(51);
+    // CPU clock at 1MHZ for 
+    // SPI commuication
+    //USART_Init(51);
+    USART_Init(6);
 
     // For memory chip 
     SPI_init();
