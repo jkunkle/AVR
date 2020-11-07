@@ -18,7 +18,7 @@ struct DateTime{
 };
 
 
-uint8_t transmit_data_with_confirmation(uint8_t nRecords);
+uint8_t transmit_data_with_confirmation(uint8_t start, uint8_t end);
 void write_block_to_memory(uint8_t nEntries);
 void load_data_from_memory( uint16_t ipage, uint8_t nEntries );
 uint16_t recover_records_count(void);
