@@ -11,14 +11,24 @@
 #define CLOCK_IO PINC1
 #define CLOCK_SCLK PINC2
 
-#define SHIFT_DATA PINB0
-#define SHIFT_ENABLE PINB1
-#define SHIFT_RESET PIND7
-#define SHIFT_COPY PIND6
+#define SHIFT_DATA PIND2
+#define SHIFT_ENABLE PIND3
+#define SHIFT_COPY PIND4
+#define SHIFT_RESET PINB6
 
-#define LCD_ENABLE PIND5
-#define LCD_RS PINB6
-#define LCD_RW PINB7
+#define LCD_ENABLE PIND6
+#define LCD_RS PINB7
+#define LCD_RW PIND5
+
+//#define SHIFT_DATA PINB0
+//#define SHIFT_ENABLE PINB1
+//#define SHIFT_RESET PIND7
+//#define SHIFT_COPY PIND6
+//
+//#define LCD_ENABLE PIND5
+//#define LCD_RS PINB6
+//#define LCD_RW PINB7
+
 
 #define SPI_DDR DDRB
 #define CS      PB2
@@ -26,23 +36,25 @@
 #define MISO    PB4
 #define SCK     PB5
 
-uint8_t yearStore[18];
-uint8_t monthStore[18];
-uint8_t dateStore[18];
-uint8_t hourStore[18];
-uint8_t minuteStore[18];
-uint8_t secondStore[18];
-uint8_t tempStore_3[18];
-uint8_t tempStore_2[18];
-uint8_t tempStore_1[18];
-uint8_t tempStore_0[18];
-uint8_t humidStore_3[18];
-uint8_t humidStore_2[18];
-uint8_t humidStore_1[18];
-uint8_t humidStore_0[18];
+#define RECORDS_PER_PAGE 18
+
+uint8_t _recordsPerTransmit = 9;
+uint8_t yearStore[RECORDS_PER_PAGE];
+uint8_t monthStore[RECORDS_PER_PAGE];
+uint8_t dateStore[RECORDS_PER_PAGE];
+uint8_t hourStore[RECORDS_PER_PAGE];
+uint8_t minuteStore[RECORDS_PER_PAGE];
+uint8_t secondStore[RECORDS_PER_PAGE];
+uint8_t tempStore_3[RECORDS_PER_PAGE];
+uint8_t tempStore_2[RECORDS_PER_PAGE];
+uint8_t tempStore_1[RECORDS_PER_PAGE];
+uint8_t tempStore_0[RECORDS_PER_PAGE];
+uint8_t humidStore_3[RECORDS_PER_PAGE];
+uint8_t humidStore_2[RECORDS_PER_PAGE];
+uint8_t humidStore_1[RECORDS_PER_PAGE];
+uint8_t humidStore_0[RECORDS_PER_PAGE];
 volatile uint16_t _nRecords = 0;
 volatile uint8_t _blockRecords = 0;
-uint8_t _recordsPerTransmit = 9;
 
 //AHT10
 uint8_t aht10_address_write = 0x70;
@@ -67,13 +79,17 @@ const uint8_t number_map[10] PROGMEM = {
 ISR(USART_RX_vect)
 {
     uint8_t res1 = USART_Receive();
-    display_bytes( res1, 0x54);
     uint8_t res2 = USART_Receive();
-    display_bytes( res2, 0x55);
 
     // reset
     if(  res1 == 0xd0 && res2==0x55 )
     {
+        // ensure that clock is in 24h mode
+        write_to_clock( 0x84, 0x00 );
+        // write seconds to zero
+        write_to_clock( 0x80, 0x00 );
+        write_to_clock( 0x82, 0x00 );
+        _delay_us(100);
         struct DateTime dt;
         dt.second_bits = USART_Receive();
         dt.minute_bits = USART_Receive();
@@ -103,14 +119,13 @@ ISR(USART_RX_vect)
         USART_Transmit( dt.day_bits );
         USART_Transmit( dt.year_bits );
 
-
     }
 
     if( res1 == 0xd2 && res2==0x55 )
     {
 
-        uint16_t nPages = _nRecords/18;
-        uint8_t nRemain = _nRecords%18;
+        uint16_t nPages = _nRecords/RECORDS_PER_PAGE;
+        uint8_t nRemain = _nRecords%RECORDS_PER_PAGE;
         // write remaining data to memory
         if( nRemain > 0 )
         {
@@ -122,17 +137,17 @@ ISR(USART_RX_vect)
         USART_Transmit( _nRecords& 0x00ff );
 
         // start at page 1
-        uint8_t nTransmits = 18/_recordsPerTransmit;
         for( int ipage = 1; ipage <= nPages; ++ipage )
         {
 
-            uint8_t nPageTransmit = 18;
+            uint8_t nPageTransmit = RECORDS_PER_PAGE;
             // in the last block only need to
             // transmit the last entries
             if( (nRemain > 0) && (ipage == nPages)  )
             {
                 nPageTransmit = nRemain;
             }
+            uint8_t nTransmits = (nPageTransmit-1)/_recordsPerTransmit + 1;
 
             load_data_from_memory( ipage + 15, nPageTransmit );
 
@@ -149,7 +164,6 @@ ISR(USART_RX_vect)
                 }
 
                 uint8_t result = transmit_data_with_confirmation(transmitStart, transmitEnd);
-                //display_time(result, result);
                 // if the checksum doesn't agree, transmit again
                 if( result == 0 ) itrans++;
             }
@@ -179,8 +193,8 @@ ISR(USART_RX_vect)
 int main( void )
 {
 
-    DDRB |= 0xc3;
-    DDRD |= 0xe0;
+    DDRB |= 0xc0;
+    DDRD |= 0x7c;
 
     // for Temp/Humid module
     i2c_init();
@@ -198,9 +212,9 @@ int main( void )
     sei();
 
     // Reset shift registers
-    PORTD &= ~(0x01 << SHIFT_RESET);
+    PORTB &= ~(0x01 << SHIFT_RESET);
     _delay_us(1);
-    PORTD |= (0x01 << SHIFT_RESET);
+    PORTB |= (0x01 << SHIFT_RESET);
     init_lcd();
 
     init_clock();
@@ -210,29 +224,18 @@ int main( void )
     //// *************
     //// write to status register
 
-
-    memory_enable_write();
-    uint16_t stat = memory_status();
-    display_2bytes( stat );
-    _delay_ms(1000);
-    memory_disable_write();
-    stat = memory_status();
-    display_2bytes( stat );
-    _delay_ms(1000);
-
-    memory_enable_write();
-    stat = memory_status();
-    display_2bytes( stat );
-    _delay_ms(1000);
-    memory_disable_write();
-    stat = memory_status();
-    display_2bytes( stat );
-    _delay_ms(1000);
-
-
     _nRecords = recover_records_count();
 
+    // give 2 seconds for HT sensor 
+    _delay_ms(2000);
+
+    //int i = 0;
     while(1) {
+
+        //display_time( i, i);
+        //i++;
+        //_delay_ms(10000);
+        
 
         //*******************************
         // AHT10 cycle
@@ -298,9 +301,9 @@ int main( void )
             display_datetime(dt, 1 );
         }
 
-        if( _blockRecords == 18 )
+        if( _blockRecords == RECORDS_PER_PAGE )
         {
-            write_block_to_memory(18);
+            write_block_to_memory(RECORDS_PER_PAGE);
             _blockRecords = 0;
         }
 
@@ -386,7 +389,7 @@ void write_block_to_memory(uint8_t nEntries)
     // fills one page
     // move by 16 pages to leave the first
     // sector for metadata
-    uint16_t page_address = ((_nRecords-1)/18) + 16;
+    uint16_t page_address = ((_nRecords-1)/RECORDS_PER_PAGE) + 16;
     uint16_t sector_address = page_address >> 4;
     uint8_t block_address = (page_address >> 8);
     uint16_t prev_sector = (page_address - 1) >> 4;
@@ -533,17 +536,17 @@ void USART_Transmit( unsigned char data )
 void write_shift_byte( uint8_t data )
 {
     // disable output
-    PORTB = PORTB | (0x1 << SHIFT_ENABLE);
+    PORTD = PORTD | (0x1 << SHIFT_ENABLE);
     for( int dd = 0; dd < 8; dd++ )
     {
         if( data & ( 0x1 << dd ) )
         {
-            PORTB = PORTB | ( 0x1 << SHIFT_DATA );
+            PORTD = PORTD | ( 0x1 << SHIFT_DATA );
         }
 
         PORTD |= (0x1 << SHIFT_COPY );
         PORTD &= ~(0x1 << SHIFT_COPY );
-        PORTB = PORTB & ~(0x1 << SHIFT_DATA );
+        PORTD = PORTD & ~(0x1 << SHIFT_DATA );
     }
 
     // one more copy is needed
@@ -555,7 +558,7 @@ void write_to_lcd( void )
 {
 
     PORTD |= (0x1 << LCD_ENABLE );
-    PORTB = PORTB & ~(0x1 << SHIFT_ENABLE );
+    PORTD = PORTD & ~(0x1 << SHIFT_ENABLE );
     PORTD &= ~( 0x1 << LCD_ENABLE );
 
 }
@@ -563,7 +566,7 @@ void write_to_lcd( void )
 void lcd_clear(void)
 {
     PORTB = PORTB & ~( 0x1 << LCD_RS );
-    PORTB = PORTB & ~( 0x1 << LCD_RW );
+    PORTD = PORTD & ~( 0x1 << LCD_RW );
     write_shift_byte( 0x01 );
     write_to_lcd();
     _delay_us( 2000 );
@@ -572,7 +575,7 @@ void lcd_clear(void)
 void lcd_home(void)
 {
     PORTB = PORTB & ~( 0x1 << LCD_RS );
-    PORTB = PORTB & ~( 0x1 << LCD_RW );
+    PORTD = PORTD & ~( 0x1 << LCD_RW );
     write_shift_byte( 0x02 );
     write_to_lcd();
     _delay_us( 2000 );
@@ -580,7 +583,7 @@ void lcd_home(void)
 void lcd_display(uint8_t val)
 {
     PORTB = PORTB | ( 0x1 << LCD_RS );
-    PORTB = PORTB & ~( 0x1 << LCD_RW );
+    PORTD = PORTD & ~( 0x1 << LCD_RW );
     write_shift_byte(val);
     write_to_lcd();
     _delay_us( 50 );
@@ -590,7 +593,7 @@ void lcd_display(uint8_t val)
 void lcd_right(void)
 {
     PORTB = PORTB & ~( 0x1 << LCD_RS );
-    PORTB = PORTB & ~( 0x1 << LCD_RW );
+    PORTD = PORTD & ~( 0x1 << LCD_RW );
     write_shift_byte( 0xc0 );
     write_to_lcd();
     _delay_us( 50 );
@@ -774,7 +777,7 @@ void display_number( float number, uint8_t padding) {
 
 }    
 
-void display_time( uint8_t mins, uint8_t secs)
+void display_time( uint16_t mins, uint16_t secs)
 {
 
     // clear display 
@@ -865,7 +868,7 @@ void init_lcd( void )
     _delay_ms(40);
 
     // set function
-    PORTB = PORTB & ~( 0x1 << LCD_RW );
+    PORTD = PORTD & ~( 0x1 << LCD_RW );
     PORTB = PORTB & ~( 0x1 << LCD_RS );
     //write_shift_byte( 0x34 );
     write_shift_byte( 0x3c );
@@ -1005,14 +1008,13 @@ void init_clock(void)
 {
     DDRC |= (1 << CLOCK_SCLK) | (1 << CLOCK_CE);
 
-    write_to_clock( 0x8e, 0x40 );
+    //dunno what this is 
+    //write_to_clock( 0x8e, 0x40 );
 
-    // ensure that clock is in 24h mode
-    write_to_clock( 0x84, 0x00 );
 
-    // write seconds to zero
-    write_to_clock( 0x80, 0x00 );
-    write_to_clock( 0x82, 0x00 );
+    // ensure that trickle charger 
+    // is enabled, 1 diode, highest resistor
+    write_to_clock( 0x90, 0xa7 );
 }
 
 void write_datetime_to_clock(struct DateTime data)
