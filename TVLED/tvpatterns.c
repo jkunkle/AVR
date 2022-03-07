@@ -85,6 +85,7 @@ volatile uint8_t DELAY = max_delays[0];
 
 const uint8_t MAX_RACE_WIDTH = 40;
 volatile uint8_t race_width = 8;
+volatile uint8_t sparkle_count = 8;
 
 // Define the LED configurations for each step
 // in the race pattern.  There are 12 entries
@@ -261,6 +262,9 @@ ISR(USART_RX_vect)
         if (race_width > MAX_RACE_WIDTH) {
             race_width = MAX_RACE_WIDTH;
         }
+    }
+    if( res1 == 0xa6){
+        sparkle_count = res2;
     }
         
 }
@@ -797,11 +801,11 @@ void run_breathe(){
 
 void run_race(uint8_t thickness){
 
-    //for( int il = 0 ; il < _MAX_LED; il++ ) {
-    //    led[il].r=0;
-    //    led[il].g=0;
-    //    led[il].b=0;
-    //}
+    for( int il = 0 ; il < _MAX_LED; il++ ) {
+        led[il].r=0;
+        led[il].g=0;
+        led[il].b=0;
+    }
 
     int raceStep = istep/DELAY;
     if( raceStep >= _N_RACE_STEPS ) { 
@@ -905,15 +909,9 @@ void run_sparkle(){
         }
 
         uint8_t new_seed = fill_random( led, brightness, (uint8_t)istep );
-        new_seed = fill_random( led, brightness, new_seed );
-        new_seed = fill_random( led, brightness, new_seed );
-        new_seed = fill_random( led, brightness, new_seed );
-        new_seed = fill_random( led, brightness, new_seed );
-        new_seed = fill_random( led, brightness, new_seed );
-        new_seed = fill_random( led, brightness, new_seed );
-        new_seed = fill_random( led, brightness, new_seed );
-        new_seed = fill_random( led, brightness, new_seed );
-        new_seed = fill_random( led, brightness, new_seed );
+        for(int i = 0; i < sparkle_count; ++i) {
+           new_seed = fill_random( led, brightness, new_seed );
+        }
 
     }
     ws2812_setleds(led,_MAX_LED);
