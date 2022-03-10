@@ -33,15 +33,27 @@
 #define _N_LED_CYAN 170
 #define _MAX_LED _N_LED_VIOLET + _N_LED_BEIGE + _N_LED_YELLOW + _N_LED_CYAN + 1
 // Total number of patterns (increase if patterns are added)
-#define _N_PAT 6
+#define _N_PAT 7
 // Number of steps in race pattern
 #define _N_RACE_STEPS 63
+#define _N_RACE_STEPS_BEIGE 39
+#define _N_RACE_STEPS_YELLOW 55
+
+// Define cutoffs for when to move
+// to the next pattern
+// can be disabled by sending the 
+// toggle_auto_update change
+#define _MAX_WAVE 100
+#define _MAX_SWITCH 20
+#define _MAX_BREATHE 50
+#define _MAX_RACE 5000
+#define _MAX_SPARKLE 1000
 
 // maximum brightness factor
 // if it is set too high it 
 // will draw too much current
 // for the power supply
-#define _MAX_BRIGHTNESS 6
+#define _MAX_BRIGHTNESS 4
 
 // define the start LED of each color
 #define _START_VIOLET 0
@@ -77,15 +89,26 @@ volatile uint8_t beige[3] = {8, 3, 1};
 // define the delay limits for each pattern
 // these should be set so that the pattern
 // cannot become too slow or too fast
-const uint8_t max_delays[_N_PAT] = {16,64, 64, 64, 64, 32};
-const uint8_t min_delays[_N_PAT] = {16,1 , 1 , 1 , 1 , 1};
+const uint8_t max_delays[_N_PAT] = {16,64, 64, 64, 64, 64, 32};
+const uint8_t min_delays[_N_PAT] = {16,1 , 1 , 1 , 1 , 1, 1};
+const uint8_t nom_delays[_N_PAT] = {4,16 , 64 , 64 , 4 , 4, 8};
 
 // default the starting delay
-volatile uint8_t DELAY = max_delays[0];
+volatile uint8_t DELAY = nom_delays[0];
 
 const uint8_t MAX_RACE_WIDTH = 40;
-volatile uint8_t race_width = 8;
+volatile uint8_t race_width = 10;
 volatile uint8_t sparkle_count = 8;
+volatile int raceStepVioletCyan = 0;
+volatile int raceStepBeige = 0;
+volatile int raceStepYellow = 0;
+volatile int disable_auto_update = 0;
+
+volatile int n_wave = 0;
+volatile int n_switch = 0;
+volatile int n_breathe = 0;
+volatile int n_race = 0;
+volatile int n_sparkle = 0;
 
 // Define the LED configurations for each step
 // in the race pattern.  There are 12 entries
@@ -98,77 +121,238 @@ volatile uint8_t sparkle_count = 8;
 // generally the first in a group corresponds to the
 // inner ring, the second to the middle ring
 // and the third to the outer ring
-const uint16_t steps_race[_N_RACE_STEPS][12] PROGMEM = {
-                {0,   92,  120, 172, 210, 237, 255, 308, 347, 539, 513, 512},
-                {1,   93,  119, 172, 210, 237, 256, 309, 348, 538, 514, 511},
-                {2,   94,  118, 173, 211, 238, 257, 310, 349, 537, 515, 510},
-                {3,   95,  117, 173, 211, 238, 258, 311, 350, 536, 516, 509},
-                {4,   96,  116, 174, 212, 239, 259, 312, 351, 535, 517, 508},
-                {5,   97,  115, 174, 212, 239, 260, 313, 352, 534, 518, 507},
-                {6,   98,  114, 175, 213, 240, 261, 314, 353, 533, 519, 506},
-                {7,   99,  113, 175, 213, 240, 262, 315, 354, 532, 520, 505},
-                {8,   100, 112, 176, 214, 241, 263, 316, 355, 531, 521, 504},
-                {9,   101, 111, 177, 215, 241, 264, 317, 356, 530, 522, 503},
-                // corner
-                {9,   102, 110, 178, 216, 241, 265, 318, 357, 530, 523, 502},
-                {9,   102, 109, 179, 217, 241, 266, 319, 357, 530, 523, 501},
-                {10,  103, 108, 180, 218, 242, 267, 320, 357, 529, 524, 500},
-                {10,  104, 107, 181, 219, 242, 268, 321, 357, 529, 525, 499},
-                {10,  105, 106, 182, 220, 243, 269, 322, 357, 529, 525, 498},
-                {10,  11,  12,  183, 221, 243, 270, 323, 357, 529, 528, 527},
+const uint16_t steps_race_violet[_N_RACE_STEPS][3] PROGMEM = {
+                {0,   92,  120},
+                {1,   93,  119},
+                {2,   94,  118},
+                {3,   95,  117},
+                {4,   96,  116},
+                {5,   97,  115},
+                {6,   98,  114},
+                {7,   99,  113},
+                {8,   100, 112},
+                {9,   101, 111},
+                {9,   102, 110},
+                {9,   102, 109},
+                {10,  103, 108},
+                {10,  104, 107},
+                {10,  105, 106},
+                {10,  11,  12},
+                {10,  11,  13},
+                {10,  52,  14},
+                {53,  51,  15},
+                {54,  50,  16},
+                {55,  49,  17},
+                {56,  48,  18},
+                {57,  47,  19},
+                {58,  46,  20},
+                {59,  45,  21},
+                {60,  44,  22},
+                {61,  43,  23},
+                {62,  42,  24},
+                {63,  41,  25},
+                {64,  40,  26},
+                {65,  39,  27},
+                {66,  38,  28},
+                {67,  37,  29},
+                {68,  36,  30},
+                {69,  35,  31},
+                {69,  34,  32},
+                {69,  34,  33},
+                {70,  144, 145},
+                {70,  143, 146},
+                {70,  143, 147},
+                {70,  142, 148},
+                {71,  141, 149},
+                {72,  140, 150},
+                {73,  139, 151},
+                {74,  138, 152},
+                {75,  137, 153},
+                {76,  136, 154},
+                {77,  135, 155},
+                {78,  134, 156},
+                {79,  133, 157},
+                {80,  132, 158},
+                {81,  131, 159},
+                {82,  130, 160},
+                {83,  129, 161},
+                {84,  128, 162},
+                {85,  127, 163},
+                {86,  126, 164},
+                {87,  125, 165},
+                {88,  124, 166},
+                {89,  123, 167},
+                {89,  122, 168},
+                {89,  122, 169},
+                {89,  90,  91},
+};
 
-                {10,  11,  13,  183, 221, 243, 271, 324, 357, 529, 528, 461},
-                {10,  52,  14,  183, 221, 243, 272, 325, 357, 529, 462, 460},
-                // together again
-                {53,  51,  15,  178, 216, 243, 273, 325, 357, 497, 463, 459},
-                {54,  50,  16,  178, 216, 243, 274, 325, 357, 496, 464, 458},
-                {55,  49,  17,  178, 216, 243, 275, 325, 357, 495, 465, 457},
-                {56,  48,  18,  178, 216, 243, 276, 325, 357, 494, 466, 456},
-                {57,  47,  19,  178, 216, 243, 277, 325, 357, 493, 467, 455},
-                {58,  46,  20,  178, 216, 243, 278, 325, 357, 492, 468, 454},
-                {59,  45,  21,  178, 216, 243, 279, 325, 357, 491, 469, 453},
-                {60,  44,  22,  178, 216, 243, 280, 325, 357, 490, 470, 452},
-                {61,  43,  23,  178, 216, 243, 281, 325, 357, 489, 471, 451},
-                {62,  42,  24,  178, 216, 243, 282, 325, 357, 488, 472, 450},
-                {63,  41,  25,  178, 216, 243, 283, 326, 357, 487, 473, 449},
-                {64,  40,  26,  178, 216, 243, 284, 327, 357, 486, 474, 448},
-                {65,  39,  27,  178, 216, 243, 285, 328, 357, 485, 475, 447},
-                {66,  38,  28,  178, 216, 243, 286, 329, 357, 484, 476, 446},
-                {67,  37,  29,  178, 216, 243, 287, 330, 357, 483, 477, 445},
-                {68,  36,  30,  178, 216, 243, 288, 331, 357, 482, 478, 444},
-                {69,  35,  31,  178, 216, 243, 289, 332, 357, 481, 479, 443},
-                // corner
-                {69,  34,  32,  178, 216, 243, 290, 333, 358, 481, 480, 442},
-                {69,  34,  33,  178, 216, 243, 291, 334, 359, 481, 480, 441},
-                {70,  144, 145, 178, 216, 243, 292, 335, 360, 440, 394, 393},
-                {70,  143, 146, 178, 216, 243, 293, 336, 361, 440, 394, 392},
-                {70,  143, 147, 178, 216, 243, 294, 337, 362, 440, 395, 391},
-                {70,  142, 148, 178, 216, 243, 295, 338, 363, 439, 396, 390},
-                // together again
-                {71,  141, 149, 178, 216, 243, 296, 339, 364, 438, 397, 389},
-                {72,  140, 150, 178, 216, 243, 297, 340, 365, 437, 398, 388},
-                {73,  139, 151, 178, 216, 243, 298, 341, 366, 436, 399, 387},
-                {74,  138, 152, 178, 216, 243, 299, 342, 366, 435, 400, 386},
-                {75,  137, 153, 178, 216, 243, 300, 342, 366, 434, 401, 385},
-                {76,  136, 154, 178, 216, 243, 301, 343, 367, 433, 402, 384},
-                {77,  135, 155, 178, 216, 243, 302, 344, 367, 432, 403, 383},
-                {78,  134, 156, 178, 216, 243, 303, 344, 367, 431, 404, 382},
-                {79,  133, 157, 178, 216, 243, 304, 344, 367, 430, 405, 381},
-                {80,  132, 158, 178, 216, 243, 305, 345, 367, 429, 406, 380},
-                {81,  131, 159, 178, 216, 243, 306, 346, 368, 428, 407, 379},
-                {82,  130, 160, 178, 216, 243, 253, 307, 347, 427, 408, 378},
-                {83,  129, 161, 178, 216, 243, 254, 307, 347, 426, 409, 377},
-                {84,  128, 162, 178, 216, 243, 255, 308, 347, 425, 410, 376},
-                {85,  127, 163, 178, 216, 243, 255, 307, 347, 424, 411, 375},
-                {86,  126, 164, 178, 216, 243, 255, 307, 347, 423, 412, 374},
-                {87,  125, 165, 178, 216, 243, 255, 307, 347, 422, 413, 373},
-                {88,  124, 166, 178, 216, 243, 255, 307, 347, 421, 414, 372},
-                // corner
-                {89,  123, 167, 178, 216, 243, 255, 307, 347, 420, 415, 371},
-                {89,  122, 168, 178, 216, 243, 255, 307, 347, 420, 416, 370},
-                {89,  122, 169, 178, 216, 243, 255, 307, 347, 420, 416, 369},
-                {89,  90,  91,  178, 216, 243, 255, 307, 347, 420, 419, 418},
+const uint16_t steps_race_beige[_N_RACE_STEPS_BEIGE][3] PROGMEM = {
+                {172, 210, 237},
+                {173, 211, 238},
+                {174, 212, 239},
+                {175, 213, 240},
+                {176, 214, 241},
+                {177, 215, 242},
+                {178, 216, 243},
+                {179, 217, 244},
+                {180, 218, 244},
+                {181, 219, 244},
+                {182, 220, 244},
+                {183, 221, 244},
+                {184, 221, 244},
+                {185, 221, 244},
+                {186, 221, 244},
+                {187, 221, 244},
+                {188, 221, 244},
+                {189, 221, 244},
+                {190, 222, 244},
+                {191, 223, 244},
+                {192, 224, 244},
+                {193, 225, 244},
+                {194, 226, 245},
+                {195, 227, 246},
+                {196, 228, 247},
+                {197, 229, 248},
+                {198, 230, 249},
+                {199, 231, 250},
+                {200, 232, 251},
+                {201, 233, 251},
+                {202, 233, 251},
+                {203, 233, 251},
+                {204, 234, 251},
+                {205, 235, 252},
+                {206, 236, 252},
+                {207, 236, 252},
+                {208, 236, 252},
+                {170, 209, 252},
+                {171, 209, 252},
+};
+
+const uint16_t steps_race_yellow[_N_RACE_STEPS_YELLOW][3] PROGMEM = {
+                {255, 308, 347},
+                {256, 309, 348},
+                {257, 310, 349},
+                {258, 311, 350},
+                {259, 312, 351},
+                {260, 313, 352},
+                {261, 314, 353},
+                {262, 315, 354},
+                {263, 316, 355},
+                {264, 317, 356},
+                {265, 318, 357},
+                {266, 319, 357},
+                {267, 320, 357},
+                {268, 321, 357},
+                {269, 322, 357},
+                {270, 323, 357},
+                {271, 324, 357},
+                {272, 325, 357},
+                {273, 325, 357},
+                {274, 325, 357},
+                {275, 325, 357},
+                {276, 325, 357},
+                {277, 325, 357},
+                {278, 325, 357},
+                {279, 325, 357},
+                {280, 325, 357},
+                {281, 325, 357},
+                {282, 325, 357},
+                {283, 326, 357},
+                {284, 327, 357},
+                {285, 328, 357},
+                {286, 329, 357},
+                {287, 330, 357},
+                {288, 331, 357},
+                {289, 332, 357},
+                {290, 333, 358},
+                {291, 334, 359},
+                {292, 335, 360},
+                {293, 336, 361},
+                {294, 337, 362},
+                {295, 338, 363},
+                {296, 339, 364},
+                {297, 340, 365},
+                {298, 341, 366},
+                {299, 342, 366},
+                {300, 342, 366},
+                {301, 343, 367},
+                {302, 344, 367},
+                {303, 344, 367},
+                {304, 344, 367},
+                {305, 345, 367},
+                {306, 346, 368},
+                {253, 307, 347},
+                {254, 307, 347},
+                {255, 308, 347},
                             };
+
+const uint16_t steps_race_cyan[_N_RACE_STEPS][12] PROGMEM = {
+                {539, 513, 512},
+                {538, 514, 511},
+                {537, 515, 510},
+                {536, 516, 509},
+                {535, 517, 508},
+                {534, 518, 507},
+                {533, 519, 506},
+                {532, 520, 505},
+                {531, 521, 504},
+                {530, 522, 503},
+                {530, 523, 502},
+                {530, 523, 501},
+                {529, 524, 500},
+                {529, 525, 499},
+                {529, 525, 498},
+                {529, 528, 527},
+                {529, 528, 461},
+                {529, 462, 460},
+                {497, 463, 459},
+                {496, 464, 458},
+                {495, 465, 457},
+                {494, 466, 456},
+                {493, 467, 455},
+                {492, 468, 454},
+                {491, 469, 453},
+                {490, 470, 452},
+                {489, 471, 451},
+                {488, 472, 450},
+                {487, 473, 449},
+                {486, 474, 448},
+                {485, 475, 447},
+                {484, 476, 446},
+                {483, 477, 445},
+                {482, 478, 444},
+                {481, 479, 443},
+                {481, 480, 442},
+                {481, 480, 441},
+                {440, 394, 393},
+                {440, 394, 392},
+                {440, 395, 391},
+                {439, 396, 390},
+                {438, 397, 389},
+                {437, 398, 388},
+                {436, 399, 387},
+                {435, 400, 386},
+                {434, 401, 385},
+                {433, 402, 384},
+                {432, 403, 383},
+                {431, 404, 382},
+                {430, 405, 381},
+                {429, 406, 380},
+                {428, 407, 379},
+                {427, 408, 378},
+                {426, 409, 377},
+                {425, 410, 376},
+                {424, 411, 375},
+                {423, 412, 374},
+                {422, 413, 373},
+                {421, 414, 372},
+                {420, 415, 371},
+                {420, 416, 370},
+                {420, 416, 369},
+                {420, 419, 418},
+};
+
 
 // define a mapping of colors
 // to sides for the switch pattern
@@ -202,6 +386,11 @@ const uint16_t color_ranges[4][2] PROGMEM = {
 volatile int ipat = 0; 
 //store the current step
 volatile uint16_t istep = 0;
+volatile uint16_t iglobalStep = 0;
+volatile uint16_t ibigGlobalStep = 0;
+
+
+
 
 //a bool for ending updates
 //currently only used for the startup pattern
@@ -243,6 +432,18 @@ ISR(USART_RX_vect)
         // to maximum
         update_brightness();
     }
+    if( res1 == 0x4a && res2 == 0x04 ) {
+        // do not auto update the pattern
+
+        if( disable_auto_update == 0) {
+            disable_auto_update = 1;
+        }
+        else if( disable_auto_update == 1 ){
+            disable_auto_update = 0;
+        }
+        
+    }
+
     if( res1 == 0xa4){
         // map one color (res2) 
         // into new RGB values
@@ -320,13 +521,14 @@ ISR(PCINT2_vect){
 // for next pattern
 void update_pattern()
 {
-    ipat += 1;
+    ipat++;
     istep = 0;
+    iglobalStep = 0;
+    ibigGlobalStep = 0;
     if( ipat >= _N_PAT ) { 
-        ipat = 0;
+        ipat = 1;
     }
-    DELAY = max_delays[ipat];
-    stop_updates = 0;
+    DELAY = nom_delays[ipat];
 
     for( int il = 0 ; il < _MAX_LED; il++ ) {
         led[il].r=0;
@@ -345,11 +547,14 @@ void update_pattern()
 void update_speed()
 {
     int prev_step = istep/DELAY;
-    DELAY /= 2;
+    if( DELAY == 1) {
+        DELAY=max_delays[ipat];
+    } else{
+        DELAY /= 2;
+    }
     if( istep/DELAY > (prev_step + 1) ) {
         istep = ( prev_step + 1)*DELAY;
     }
-    if( DELAY <= min_delays[ipat]) DELAY=max_delays[ipat];
 }
 
 // decrease brightness
@@ -365,46 +570,57 @@ void update_brightness()
 
 int main(void)
 {
-  TIMSK1 = ( 1 << TOIE1 );
-  PORTD |= ( 1 << PD2 ) | (1 << PD3 ) | (1 << PD4 ); // enable PORTD.2, PORTD.3, PORTD.4 pin pull up resistor
-  DDRD |= ( 1 << PD5 ) | ( 1 << PD6 ) | ( 1 << PD7 );
-  DDRB |= ( 1 << PB0 );
-  EIMSK |= (1<<INT0) | ( 1 << INT1 );  // enable external interrupt 0
-  EICRA |= (1<<ISC01) | (1 << ISC11 ); // interrupt on falling edge
-  // enable interrupt on PCINT20
-  PCICR |= (1 << PCIE2);
-  PCMSK2 = 0;
-  PCMSK2 |= (1 << PCINT20);
+    TIMSK1 = ( 1 << TOIE1 );
+    PORTD |= ( 1 << PD2 ) | (1 << PD3 ) | (1 << PD4 ); // enable PORTD.2, PORTD.3, PORTD.4 pin pull up resistor
+    DDRD |= ( 1 << PD5 ) | ( 1 << PD6 ) | ( 1 << PD7 );
+    DDRB |= ( 1 << PB0 );
+    EIMSK |= (1<<INT0) | ( 1 << INT1 );  // enable external interrupt 0
+    EICRA |= (1<<ISC01) | (1 << ISC11 ); // interrupt on falling edge
+    // enable interrupt on PCINT20
+    PCICR |= (1 << PCIE2);
+    PCMSK2 = 0;
+    PCMSK2 |= (1 << PCINT20);
 
-  sei();
+    sei();
 
-  // initialize bluetooth interface
-  USART_Init(207);
+    // initialize bluetooth interface
+    USART_Init(207);
 
-  _delay_ms(100);
-  while(1) {
-      
-    if( ipat == 0 ) { 
-       run_turnon();
-    }
-    if( ipat == 1 ) { 
-        run_wave();
-    }
-    if( ipat == 2 ) { 
-        run_switch();
-    }
-    if( ipat == 3 ) { 
-        run_breathe();
-    }
-    if( ipat == 4 ) { 
-        run_race(race_width);
-    }
-    else if( ipat == 5 ) { 
-        run_sparkle();
-    }
+    _delay_ms(100);
+    while(1) {
+        
+        if( ipat == 0 ) { 
+           run_turnon();
+           if( ibigGlobalStep >= 10 ) {
+               update_pattern();
+           }
+        }
+        if( ipat == 1 ) { 
+            run_wave();
+        }
+        if( ipat == 2 ) { 
+            run_switch();
+        }
+        if( ipat == 3 ) { 
+            run_breathe();
+        }
+        if( ipat == 4 ) { 
+            run_race(race_width, 0);
+        }
+        if( ipat == 5 ) { 
+            run_race(race_width, 1);
+        }
+        else if( ipat == 6 ) { 
+            run_sparkle();
+        }
 
-    istep++;
-  }
+        istep++;
+        iglobalStep++;
+        if( iglobalStep == 0 ){
+            ibigGlobalStep++;
+        }
+
+    }
 
 }
 
@@ -415,7 +631,7 @@ int main(void)
 // to the maximal brightness
 // and then stay there
 void run_turnon(){
-        
+
     if( istep > 13 ) { 
         stop_updates = 1;
     }
@@ -423,6 +639,7 @@ void run_turnon(){
         return;
     }
     for( int il = _START_VIOLET ; il < _START_BEIGE; il++ ) {
+
         led[il].r=violet[0]*istep;
         led[il].g=violet[1]*istep;
         led[il].b=violet[2]*istep;
@@ -443,7 +660,7 @@ void run_turnon(){
         led[il].b=cyan[2]*istep;
     }
     ws2812_setleds(led,_MAX_LED);
-    _delay_ms(DELAY); 
+    //_delay_ms(DELAY); 
 
 }
 
@@ -457,7 +674,13 @@ void run_wave() {
 
     if( istep/DELAY >= 3 ) { 
         istep = 0;
+        n_wave++;
     }
+    if( n_wave >= _MAX_WAVE && disable_auto_update == 0) {
+        update_pattern();
+        n_wave = 0;
+    }
+
     for( int il = 0 ; il < _MAX_LED; il++ ) {
         led[il].r=0;
         led[il].g=0;
@@ -667,9 +890,15 @@ void run_wave() {
 // swap colors between sides
 void run_switch(){
 
+
     uint16_t patStep = istep/DELAY;
     if( patStep >= 12 ) { 
+        n_switch++;
         istep = 0;
+    }
+    if(n_switch >= _MAX_SWITCH && disable_auto_update == 0){
+        n_switch = 0;
+        update_pattern();
     }
 
     uint8_t pat0  = pgm_read_byte(&(color_patterns[patStep][0]));
@@ -721,6 +950,7 @@ void run_breathe(){
     // when at step 20
     // switch directions 
     if( istep >= 20 ) { 
+        n_breathe++;
         istep = 0;
         if( idirection == 0 ) {
             idirection = 1 ;
@@ -728,6 +958,10 @@ void run_breathe(){
         else {
             idirection = 0 ;
         }
+    }
+    if( n_breathe >= _MAX_BREATHE && disable_auto_update == 0 ){
+        n_breathe = 0;
+        update_pattern();
     }
 
     // fast steps
@@ -799,99 +1033,208 @@ void run_breathe(){
 // that travels around the rings
 // synchronously
 
-void run_race(uint8_t thickness){
+void run_race(uint8_t thickness, int direction){
 
+
+    int this_loc_violet_cyan = 0;
+    int this_loc_beige = 0;
+    int this_loc_yellow = 0;
+       
     for( int il = 0 ; il < _MAX_LED; il++ ) {
         led[il].r=0;
         led[il].g=0;
         led[il].b=0;
     }
 
-    int raceStep = istep/DELAY;
-    if( raceStep >= _N_RACE_STEPS ) { 
-        istep = 0;
-        ws2812_setleds(led,_MAX_LED);
+    if(n_race >= _MAX_RACE && disable_auto_update == 0 ){
+        n_race = 0;
+        update_pattern();
+    }
+
+    if(istep % DELAY == 0) {
+        n_race++;
+
+        // forward
+        if( direction == 0 ){
+            raceStepVioletCyan += 1;
+            raceStepBeige += 1;
+            raceStepYellow += 1;
+
+            if( raceStepVioletCyan >= _N_RACE_STEPS ) { 
+                raceStepVioletCyan = 0;
+            }
+            if( raceStepBeige >= _N_RACE_STEPS_BEIGE) { 
+                raceStepBeige = 0;
+            }
+            if( raceStepYellow >= _N_RACE_STEPS_YELLOW) { 
+                raceStepYellow = 0;
+            }
+        }
+        //reverse
+        if( direction == 1) {
+            raceStepVioletCyan -= 1;
+            raceStepBeige -= 1;
+            raceStepYellow -= 1;
+
+            if( raceStepVioletCyan < 0 ) { 
+                raceStepVioletCyan = _N_RACE_STEPS - 1;
+            }
+            if( raceStepBeige < 0) { 
+                raceStepBeige = _N_RACE_STEPS_BEIGE - 1;
+            }
+            if( raceStepYellow < 0 ) { 
+                raceStepYellow = _N_RACE_STEPS_YELLOW - 1;
+            }
+        }
     }
 
     for(int ient=0;  ient < thickness; ient++){
 
-        int this_loc = raceStep + ient;
-        if(this_loc > _N_RACE_STEPS){
-            this_loc = this_loc - _N_RACE_STEPS;
+        if( direction == 0) {
+            this_loc_violet_cyan = raceStepVioletCyan + ient;
+            if(this_loc_violet_cyan >= _N_RACE_STEPS){
+                this_loc_violet_cyan = this_loc_violet_cyan - _N_RACE_STEPS;
+            }
+            this_loc_beige = raceStepBeige + ient;
+            if(this_loc_beige >= _N_RACE_STEPS_BEIGE){
+                this_loc_beige = this_loc_beige - _N_RACE_STEPS_BEIGE;
+            }
+            this_loc_yellow = raceStepYellow + ient;
+            if(this_loc_yellow >= _N_RACE_STEPS_YELLOW){
+                this_loc_yellow = this_loc_yellow - _N_RACE_STEPS_YELLOW;
+            }
+        }
+        if( direction == 1) {
+            this_loc_violet_cyan = raceStepVioletCyan - ient;
+            if(this_loc_violet_cyan < 0){
+                this_loc_violet_cyan = this_loc_violet_cyan + _N_RACE_STEPS;
+            }
+            this_loc_beige = raceStepBeige - ient;
+            if(this_loc_beige < 0){
+                this_loc_beige = this_loc_beige + _N_RACE_STEPS_BEIGE;
+            }
+            this_loc_yellow = raceStepYellow - ient;
+            if(this_loc_yellow < 0){
+                this_loc_yellow = this_loc_yellow + _N_RACE_STEPS_YELLOW;
+            }
         }
 
-        int loc_cyan1 = this_loc;
-        if( ient == 0 ){
-            loc_cyan1 = loc_cyan1 + 1;
+        uint16_t violet0 = pgm_read_word(&(steps_race_violet[this_loc_violet_cyan][0]));
+        uint16_t violet1 = pgm_read_word(&(steps_race_violet[this_loc_violet_cyan][1]));
+        uint16_t violet2 = pgm_read_word(&(steps_race_violet[this_loc_violet_cyan][2]));
+
+        uint16_t beige0 = pgm_read_word(&(steps_race_beige[this_loc_beige][0]));
+        uint16_t beige1 = pgm_read_word(&(steps_race_beige[this_loc_beige][1]));
+        uint16_t beige2 = pgm_read_word(&(steps_race_beige[this_loc_beige][2]));
+
+        uint16_t yellow0 = pgm_read_word(&(steps_race_yellow[this_loc_yellow][0]));
+        uint16_t yellow1 = pgm_read_word(&(steps_race_yellow[this_loc_yellow][1]));
+        uint16_t yellow2 = pgm_read_word(&(steps_race_yellow[this_loc_yellow][2]));
+
+        uint16_t cyan0 = pgm_read_word(&(steps_race_cyan[this_loc_violet_cyan][0]));
+        uint16_t cyan1 = pgm_read_word(&(steps_race_cyan[this_loc_violet_cyan][1]));
+        uint16_t cyan2 = pgm_read_word(&(steps_race_cyan[this_loc_violet_cyan][2]));
+
+        if( ient == (thickness - 1)) {
+            led[violet1].r=violet[0]*brightness;
+            led[violet1].g=violet[1]*brightness;
+            led[violet1].b=violet[2]*brightness;
+
+            led[beige1].r=beige[0]*brightness;
+            led[beige1].g=beige[1]*brightness;
+            led[beige1].b=beige[2]*brightness;
+
+            led[yellow1].r=yellow[0]*brightness;
+            led[yellow1].g=yellow[1]*brightness;
+            led[yellow1].b=yellow[2]*brightness;
+
+            led[cyan1].r=cyan[0]*brightness;
+            led[cyan1].g=cyan[1]*brightness;
+            led[cyan1].b=cyan[2]*brightness;
         }
-        if( ient == thickness-1 ){
-            loc_cyan1 = loc_cyan1 - 1;
+        else if( ient == 0 ){
+            led[violet0].r=violet[0]*brightness;
+            led[violet0].g=violet[1]*brightness;
+            led[violet0].b=violet[2]*brightness;
+
+            led[violet2].r=violet[0]*brightness;
+            led[violet2].g=violet[1]*brightness;
+            led[violet2].b=violet[2]*brightness;
+
+            led[beige0].r=beige[0]*brightness;
+            led[beige0].g=beige[1]*brightness;
+            led[beige0].b=beige[2]*brightness;
+
+            led[beige2].r=beige[0]*brightness;
+            led[beige2].g=beige[1]*brightness;
+            led[beige2].b=beige[2]*brightness;
+
+            led[yellow0].r=yellow[0]*brightness;
+            led[yellow0].g=yellow[1]*brightness;
+            led[yellow0].b=yellow[2]*brightness;
+
+            led[yellow2].r=yellow[0]*brightness;
+            led[yellow2].g=yellow[1]*brightness;
+            led[yellow2].b=yellow[2]*brightness;
+
+            led[cyan0].r=cyan[0]*brightness;
+            led[cyan0].g=cyan[1]*brightness;
+            led[cyan0].b=cyan[2]*brightness;
+
+            led[cyan2].r=cyan[0]*brightness;
+            led[cyan2].g=cyan[1]*brightness;
+            led[cyan2].b=cyan[2]*brightness;
         }
 
-        uint16_t violet0 = pgm_read_word(&(steps_race[this_loc][0]));
-        uint16_t violet1 = pgm_read_word(&(steps_race[this_loc][1]));
-        uint16_t violet2 = pgm_read_word(&(steps_race[this_loc][2]));
+        else{
+            led[violet0].r=violet[0]*brightness;
+            led[violet0].g=violet[1]*brightness;
+            led[violet0].b=violet[2]*brightness;
 
-        uint16_t beige0 = pgm_read_word(&(steps_race[this_loc][3]));
-        uint16_t beige1 = pgm_read_word(&(steps_race[this_loc][4]));
-        uint16_t beige2 = pgm_read_word(&(steps_race[this_loc][5]));
+            led[violet1].r=violet[0]*brightness;
+            led[violet1].g=violet[1]*brightness;
+            led[violet1].b=violet[2]*brightness;
 
-        uint16_t yellow0 = pgm_read_word(&(steps_race[this_loc][6]));
-        uint16_t yellow1 = pgm_read_word(&(steps_race[this_loc][7]));
-        uint16_t yellow2 = pgm_read_word(&(steps_race[this_loc][8]));
+            led[violet2].r=violet[0]*brightness;
+            led[violet2].g=violet[1]*brightness;
+            led[violet2].b=violet[2]*brightness;
 
-        uint16_t cyan0 = pgm_read_word(&(steps_race[this_loc][9]));
-        uint16_t cyan1 = pgm_read_word(&(steps_race[loc_cyan1][10]));
-        //uint16_t cyan1 = pgm_read_word(&(steps_race[this_loc][10]));
-        uint16_t cyan2 = pgm_read_word(&(steps_race[this_loc][11]));
+            led[beige0].r=beige[0]*brightness;
+            led[beige0].g=beige[1]*brightness;
+            led[beige0].b=beige[2]*brightness;
 
-        led[violet0].r=violet[0]*brightness;
-        led[violet0].g=violet[1]*brightness;
-        led[violet0].b=violet[2]*brightness;
+            led[beige1].r=beige[0]*brightness;
+            led[beige1].g=beige[1]*brightness;
+            led[beige1].b=beige[2]*brightness;
 
-        led[violet1].r=violet[0]*brightness;
-        led[violet1].g=violet[1]*brightness;
-        led[violet1].b=violet[2]*brightness;
+            led[beige2].r=beige[0]*brightness;
+            led[beige2].g=beige[1]*brightness;
+            led[beige2].b=beige[2]*brightness;
 
-        led[violet2].r=violet[0]*brightness;
-        led[violet2].g=violet[1]*brightness;
-        led[violet2].b=violet[2]*brightness;
+            led[yellow0].r=yellow[0]*brightness;
+            led[yellow0].g=yellow[1]*brightness;
+            led[yellow0].b=yellow[2]*brightness;
 
-        led[beige0].r=beige[0]*brightness;
-        led[beige0].g=beige[1]*brightness;
-        led[beige0].b=beige[2]*brightness;
+            led[yellow1].r=yellow[0]*brightness;
+            led[yellow1].g=yellow[1]*brightness;
+            led[yellow1].b=yellow[2]*brightness;
 
-        led[beige1].r=beige[0]*brightness;
-        led[beige1].g=beige[1]*brightness;
-        led[beige1].b=beige[2]*brightness;
+            led[yellow2].r=yellow[0]*brightness;
+            led[yellow2].g=yellow[1]*brightness;
+            led[yellow2].b=yellow[2]*brightness;
 
-        led[beige2].r=beige[0]*brightness;
-        led[beige2].g=beige[1]*brightness;
-        led[beige2].b=beige[2]*brightness;
+            led[cyan0].r=cyan[0]*brightness;
+            led[cyan0].g=cyan[1]*brightness;
+            led[cyan0].b=cyan[2]*brightness;
 
-        led[yellow0].r=yellow[0]*brightness;
-        led[yellow0].g=yellow[1]*brightness;
-        led[yellow0].b=yellow[2]*brightness;
+            led[cyan1].r=cyan[0]*brightness;
+            led[cyan1].g=cyan[1]*brightness;
+            led[cyan1].b=cyan[2]*brightness;
 
-        led[yellow1].r=yellow[0]*brightness;
-        led[yellow1].g=yellow[1]*brightness;
-        led[yellow1].b=yellow[2]*brightness;
-
-        led[yellow2].r=yellow[0]*brightness;
-        led[yellow2].g=yellow[1]*brightness;
-        led[yellow2].b=yellow[2]*brightness;
-
-        led[cyan0].r=cyan[0]*brightness;
-        led[cyan0].g=cyan[1]*brightness;
-        led[cyan0].b=cyan[2]*brightness;
-
-        led[cyan1].r=cyan[0]*brightness;
-        led[cyan1].g=cyan[1]*brightness;
-        led[cyan1].b=cyan[2]*brightness;
-
-        led[cyan2].r=cyan[0]*brightness;
-        led[cyan2].g=cyan[1]*brightness;
-        led[cyan2].b=cyan[2]*brightness;
+            led[cyan2].r=cyan[0]*brightness;
+            led[cyan2].g=cyan[1]*brightness;
+            led[cyan2].b=cyan[2]*brightness;
+        }
     }
 
     ws2812_setleds(led,_MAX_LED);
@@ -901,7 +1244,9 @@ void run_race(uint8_t thickness){
 // to activate
 void run_sparkle(){
 
+
     if((istep % DELAY) == 0){
+        n_sparkle++;
         for( int il = 0 ; il < _MAX_LED; il++ ) {
             led[il].r=0;
             led[il].g=0;
@@ -913,6 +1258,10 @@ void run_sparkle(){
            new_seed = fill_random( led, brightness, new_seed );
         }
 
+    }
+    if(n_sparkle >= _MAX_SPARKLE && disable_auto_update == 0 ){
+        n_sparkle = 0;
+        update_pattern();
     }
     ws2812_setleds(led,_MAX_LED);
 }
@@ -959,7 +1308,7 @@ uint8_t fill_random(struct cRGB *led, int brightness, uint8_t seed )
 
     uint16_t val_beige = rand_beige + _START_BEIGE;
 
-    uint16_t val_yellow = rand_yellow + _START_YELLOW;
+    uint16_t val_yellow = rand_yellow + _START_YELLOW - 1;
 
     uint16_t val_cyan = rand_cyan + _START_CYAN;
 
