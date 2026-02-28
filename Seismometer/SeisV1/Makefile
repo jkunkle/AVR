@@ -15,11 +15,12 @@ F_CPU = 1000000UL
 FORMAT = ihex
 
 # Target file name (without extension).
-TARGET = counter
+TARGET = controller
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = $(TARGET).c
+#SRC = $(TARGET).cpp i2c_master.cpp SD/src/SD.cpp
+SRC = $(TARGET).cpp i2c_master.cpp
 
 
 # List Assembler source files here.
@@ -74,11 +75,11 @@ CFLAGS = -g$(DEBUG)
 CFLAGS += $(CDEFS) $(CINCS)
 CFLAGS += -O$(OPT)
 CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
-CFLAGS += -Wall -Wstrict-prototypes
-CFLAGS += -Wa,-adhlns=$(<:.c=.lst)
+CFLAGS += -Wall 
+CFLAGS += -Wa,-adhlns=$(<:.cpp=.lst)
 CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
-CFLAGS += $(CSTANDARD)
-CFLAGS += -DF_OSC=$(F_OSC)
+#CFLAGS += $(CSTANDARD)
+#CFLAGS += -DF_OSC=$(F_OSC)
 
 
 
@@ -187,6 +188,7 @@ DIRLIB = $(DIRAVR)/avr/lib
 # Define programs and commands.
 SHELL = sh
 CC = avr-gcc
+CPP = avr-g++
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 SIZE = avr-size
@@ -220,10 +222,10 @@ MSG_CLEANING = Cleaning project:
 
 
 # Define all object files.
-OBJ = $(SRC:.c=.o) $(ASRC:.S=.o) 
+OBJ = $(SRC:.cpp=.o) $(ASRC:.S=.o) 
 
 # Define all listing files.
-LST = $(ASRC:.S=.lst) $(SRC:.c=.lst)
+LST = $(ASRC:.S=.lst) $(SRC:.cpp=.lst)
 
 
 # Compiler flags to generate dependency files.
@@ -280,7 +282,7 @@ sizeafter:
 
 # Display compiler version information.
 gccversion : 
-	@$(CC) --version
+	@$(CPP) --version
 
 
 
@@ -289,7 +291,7 @@ program: $(TARGET).hex $(TARGET).eep
 	#$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM)
 	#avrdude -p$(avrType) -c$(programmerType) -P$(programmerDev) -b$(baud) -v -U flash:w:$(src).flash.hex
 	echo avrdude -p$(avrType) -c$(programmerType)  -b$(baud) -v -U flash:w:$(TARGET).hex
-	avrdude -p$(avrType) -c$(programmerType) -P/dev/cu.usbserial-1420 -b$(baud) -v -U flash:w:$(TARGET).hex
+	avrdude -p$(avrType) -c$(programmerType) -P/dev/cu.usbserial-1410 -b$(baud) -v -U flash:w:$(TARGET).hex
 
 
 
@@ -347,26 +349,26 @@ extcoff: $(TARGET).elf
 %.elf: $(OBJ)
 	@echo
 	@echo $(MSG_LINKING) $@
-	$(CC) $(ALL_CFLAGS) $(OBJ) --output $@ $(LDFLAGS)
+	$(CPP) $(ALL_CFLAGS) $(OBJ) --output $@ $(LDFLAGS)
 
 
 # Compile: create object files from C source files.
-%.o : %.c
+%.o : %.cpp
 	@echo
 	@echo $(MSG_COMPILING) $<
-	$(CC) -c $(ALL_CFLAGS) $< -o $@ 
+	$(CPP) -c $(ALL_CFLAGS) $< -o $@ 
 
 
 # Compile: create assembler files from C source files.
-%.s : %.c
-	$(CC) -S $(ALL_CFLAGS) $< -o $@
+%.s : %.cpp
+	$(CPP) -S $(ALL_CFLAGS) $< -o $@
 
 
 # Assemble: create object files from assembler source files.
 %.o : %.S
 	@echo
 	@echo $(MSG_ASSEMBLING) $<
-	$(CC) -c $(ALL_ASFLAGS) $< -o $@
+	$(CPP) -c $(ALL_ASFLAGS) $< -o $@
 
 
 
@@ -389,8 +391,6 @@ clean_list :
 	$(REMOVE) $(TARGET).lss
 	$(REMOVE) $(OBJ)
 	$(REMOVE) $(LST)
-	$(REMOVE) $(SRC:.c=.s)
-	$(REMOVE) $(SRC:.c=.d)
 	$(REMOVE) .dep/*
 
 

@@ -9,18 +9,26 @@ MCU = atmega328p
 
 # Main Oscillator Frequency
 # This is only used to define F_OSC in all assembler and c-sources.
-F_CPU = 1000000UL
+F_CPU = 16000000UL
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex
 
 # Target file name (without extension).
-TARGET = counter
+TARGET = rtctest
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = $(TARGET).c
+#SRC = $(TARGET).cpp i2c_master.cpp
+#$(wildcard SdCard/*.cpp) \
 
+SDFAT_CPP := \
+  $(wildcard SdCard/SdSpiCard/*.cpp) \
+  $(wildcard SdCard/SdSpiCard/SpiDriver/SdSpiChipSelect*.cpp) \
+  $(wildcard FatLib/*.cpp) \
+  $(wildcard common/*.cpp)
+
+SRC = $(TARGET).cpp i2c_master.cpp sd_cs.cpp AvrSdSpiDriver.cpp $(SDFAT_CPP)
 
 # List Assembler source files here.
 # Make them always end in a capital .S.  Files ending in a lowercase .s
@@ -73,12 +81,12 @@ CINCS =
 CFLAGS = -g$(DEBUG)
 CFLAGS += $(CDEFS) $(CINCS)
 CFLAGS += -O$(OPT)
-CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
-CFLAGS += -Wall -Wstrict-prototypes
-CFLAGS += -Wa,-adhlns=$(<:.c=.lst)
+CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -ffunction-sections -fdata-sections
+CFLAGS += -Wall 
+CFLAGS += -Wa,-adhlns=$(<:.cpp=.lst)
 CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
-CFLAGS += $(CSTANDARD)
-CFLAGS += -DF_OSC=$(F_OSC)
+#CFLAGS += $(CSTANDARD)
+#CFLAGS += -DF_OSC=$(F_OSC)
 
 
 
@@ -129,7 +137,8 @@ EXTMEMOPTS =
 #  -Wl,...:     tell GCC to pass this to linker.
 #    -Map:      create map file
 #    --cref:    add cross reference to  map file
-LDFLAGS = -Wl,-Map=$(TARGET).map,--cref
+LDFLAGS = -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections 
+#LDFLAGS = -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS += $(EXTMEMOPTS)
 LDFLAGS += $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB)
 
@@ -187,6 +196,7 @@ DIRLIB = $(DIRAVR)/avr/lib
 # Define programs and commands.
 SHELL = sh
 CC = avr-gcc
+CPP = avr-g++
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 SIZE = avr-size
@@ -220,10 +230,10 @@ MSG_CLEANING = Cleaning project:
 
 
 # Define all object files.
-OBJ = $(SRC:.c=.o) $(ASRC:.S=.o) 
+OBJ = $(SRC:.cpp=.o) $(ASRC:.S=.o) 
 
 # Define all listing files.
-LST = $(ASRC:.S=.lst) $(SRC:.c=.lst)
+LST = $(ASRC:.S=.lst) $(SRC:.cpp=.lst)
 
 
 # Compiler flags to generate dependency files.
@@ -232,7 +242,7 @@ GENDEPFLAGS = -MD -MP -MF .dep/$(@F).d
 
 # Combine all necessary flags and optional flags.
 # Add target processor to flags.
-ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS) $(GENDEPFLAGS)
+ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS) $(GENDEPFLAGS) -DENABLE_ARDUINO_FEATURES=0 -DENABLE_ARDUINO_SERIAL=0 -DENABLE_ARDUINO_STRING=0 -DSD_CHIP_SELECT_MODE=2 -DSPI_DRIVER_SELECT=3 -DSD_FAT_TYPE=1 -DF_CPU=$(F_CPU) -DUSE_LONG_FILE_NAMES=0
 ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
 
@@ -258,6 +268,7 @@ sym: $(TARGET).sym
 begin:
 	@echo
 	@echo $(MSG_BEGIN)
+	@echo $(SRC)
 
 finished:
 	@echo $(MSG_ERRORS_NONE)
@@ -280,7 +291,7 @@ sizeafter:
 
 # Display compiler version information.
 gccversion : 
-	@$(CC) --version
+	@$(CPP) --version
 
 
 
@@ -347,26 +358,26 @@ extcoff: $(TARGET).elf
 %.elf: $(OBJ)
 	@echo
 	@echo $(MSG_LINKING) $@
-	$(CC) $(ALL_CFLAGS) $(OBJ) --output $@ $(LDFLAGS)
+	$(CPP) $(ALL_CFLAGS) $(OBJ) --output $@ $(LDFLAGS)
 
 
 # Compile: create object files from C source files.
-%.o : %.c
+%.o : %.cpp
 	@echo
 	@echo $(MSG_COMPILING) $<
-	$(CC) -c $(ALL_CFLAGS) $< -o $@ 
+	$(CPP) -c $(ALL_CFLAGS) $< -o $@ 
 
 
 # Compile: create assembler files from C source files.
-%.s : %.c
-	$(CC) -S $(ALL_CFLAGS) $< -o $@
+%.s : %.cpp
+	$(CPP) -S $(ALL_CFLAGS) $< -o $@
 
 
 # Assemble: create object files from assembler source files.
 %.o : %.S
 	@echo
 	@echo $(MSG_ASSEMBLING) $<
-	$(CC) -c $(ALL_ASFLAGS) $< -o $@
+	$(CPP) -c $(ALL_ASFLAGS) $< -o $@
 
 
 
@@ -389,8 +400,6 @@ clean_list :
 	$(REMOVE) $(TARGET).lss
 	$(REMOVE) $(OBJ)
 	$(REMOVE) $(LST)
-	$(REMOVE) $(SRC:.c=.s)
-	$(REMOVE) $(SRC:.c=.d)
 	$(REMOVE) .dep/*
 
 
